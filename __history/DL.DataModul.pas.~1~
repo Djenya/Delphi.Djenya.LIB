@@ -1,0 +1,307 @@
+unit DL.DataModul;
+
+interface
+
+uses
+  SysUtils, Classes, XPMan, FR_Class, FR_ADODB, FR_DBSet, FR_DSet, FR_ADOQuery,
+  FR_Rich, FR_DCtrl, frXMLExl, DB, ADODB, ImgList, Controls, Graphics, ExtCtrls,
+  Windows, jpeg, frxpngimage, DL.libSystemInfo;
+
+type
+  // для хранения инф. о пользователе
+  TLoginTune = record
+    WorkDB: string;
+    WorkServer: string;
+    ReportDB: string;
+    ReportServer: string;
+
+    Login: string;
+    Password: string;
+
+    dboAdmin: Boolean;
+  end;
+
+type
+  TDLdmMain = class(TDataModule)
+    cnMain: TADOConnection;
+    sqlUpdateProgram: TADODataSet;
+    frDialogControls1: TfrDialogControls;
+    frADOComponents1: TfrADOComponents;
+    frXMLExcelExport1: TfrXMLExcelExport;
+    frReport1: TfrReport;
+    sqlReport: TADODataSet;
+    XPManifest1: TXPManifest;
+    ImageList1: TImageList;
+    cnReport: TADOConnection;
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+const
+  CONNECTION_STRING =
+	  'Provider=SQLOLEDB.1;' +
+		'Persist Security Info=True;' +
+		'Initial Catalog=%s;' +
+		'Data Source=%s;' +
+    'Workstation ID=%s;';
+
+var
+  LoginTunes: TLoginTune;
+
+//****************************************************************************//
+
+function ConnectionServer(cnName: TADOConnection; ServerName, DBName: string; LoginName, PasStr: string): Boolean;
+function ShifrPassword(StringX: string): string;
+function CreateBitmapRgn(DC: hDC; Bitmap: hBitmap; TransClr: TColorRef): hRgn;
+procedure LoadBmpToBitmap(Bitmap: Graphics.TBitmap; NameSection: string; NameImageRes: string);
+procedure LoadJPGToImage(Image: TImage; NameSection: string; NameImageRes: string);
+procedure LoadPNGToImage(Image: TImage; NameSection: string; NameImageRes: string);
+
+implementation
+
+{$R *.dfm}
+
+function ConnectionServer(cnName: TADOConnection; ServerName, DBName: string; LoginName, PasStr: string): Boolean;
+begin
+  try
+    cnName.Connected := False;
+    cnName.LoginPrompt := False;
+    cnName.ConnectionString := Format(CONNECTION_STRING,
+                                      [DBName,
+                                       ServerName,
+                                       TCompInfo.GetCompName]);
+    cnName.Open(LoginName, PasStr);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+function ShifrPassword(StringX: string): string;
+var
+  i : integer;
+  pasXOR: String;
+begin
+  for i := 1 to Length(StringX) do
+    pasXOR := pasXOR + AnsiChar((ord(StringX[i]) xor ord('Я')));
+  Result := PasXor;
+end;
+
+{$region ' Загрузка из ресурсов и построение региона по Bitmap'}
+
+procedure LoadBmpToBitmap(Bitmap: Graphics.TBitmap; NameSection: string; NameImageRes: string);
+// загрузка bmp из файла ресурса *
+var m: TStream;
+    b: Graphics.TBitmap;
+begin
+  try
+    m := TResourceStream.Create(HInstance, NameImageRes, pchar(NameSection));
+    m.Position := 0;
+    b := Graphics.TBitmap.Create;
+    b.LoadFromStream(m);
+    Bitmap.Assign(b);
+  finally
+    m.Free;
+    b.Free;
+  end;
+end;
+
+procedure LoadJPGToImage(Image: TImage; NameSection: string; NameImageRes: string);
+var m: TStream;
+    b: TJPEGImage;
+begin
+  try
+    m := TResourceStream.Create(HInstance, NameImageRes, pchar(NameSection));
+    m.Position := 0;
+    b := TJPEGImage.Create();
+    b.LoadFromStream(m);
+    Image.Picture.Assign(b);
+  finally
+    m.Free;
+    b.Free;
+  end;
+end;
+
+procedure LoadPNGToImage(Image: TImage; NameSection: string; NameImageRes: string);
+//загрузка пнг из ресурсов
+var m: TStream;
+    b: TPNGObject;
+begin
+ try
+   m := TResourceStream.Create(HInstance, NameImageRes, pchar(NameSection));
+   m.Position:=0;
+   b:=TPNGObject.Create;
+   b.LoadFromStream(m);
+   Image.Picture.Assign(b);
+ finally
+   m.Free;
+   b.Free;
+ end;
+end;
+
+function CreateBitmapRgn(DC: hDC; Bitmap: hBitmap; TransClr: TColorRef): hRgn;
+var
+  bmInfo: Windows.TBitmap;       // структура BITMAP WinAPI
+  W, H: Integer;                 // высота и ширина растра
+  bmDIB: hBitmap;                // дискрептор независимого растра
+  bmiInfo: BITMAPINFO;           // структура BITMAPINFO WinAPI
+  lpBits, lpOldBits: PRGBTriple; // указатели на структуры RGBTRIPLE WinAPI
+  lpData: PRgnData;              // указатель на структуру RGNDATA WinAPI
+  X, Y, C, F, I: Integer;        // переменные циклов
+  Buf: Pointer;                  // указатель
+  BufSize: Integer;              // размер указателя
+  rdhInfo: TRgnDataHeader;       // структура RGNDATAHEADER WinAPI
+  lpRect: PRect;                 // указатель на TRect (RECT WinAPI)
+begin
+  Result:=0;
+  //если растр не задан, выходим
+  if Bitmap=0 then
+    Exit;
+
+  //узнаем размеры растра
+  GetObject(Bitmap, SizeOf(bmInfo), @bmInfo);
+  //используя структуру BITMAP
+  W:=bmInfo.bmWidth;
+  H:=bmInfo.bmHeight;
+  //определяем смещение в байтах
+  I:=(W*3)-((W*3) div 4)*4;
+  if I<>0 then
+    I:=4-I;
+
+  //Пояснение: растр Windows Bitmap читается снизу вверх, причем каждая строка
+  //дополняется нулевыми байтами до ее кратности 4.
+  //для 32-х битный растров такой сдвиг делать не надо.
+
+  //заполняем BITMAPINFO для передачи в CreateDIBSection
+
+  bmiInfo.bmiHeader.biWidth:=W;            // ширина
+  bmiInfo.bmiHeader.biHeight:=H;           // высота
+  bmiInfo.bmiHeader.biPlanes:=1;           // всегда 1
+  bmiInfo.bmiHeader.biBitCount:=24;        // три байта на пиксель
+  bmiInfo.bmiHeader.biCompression:=BI_RGB; // без компрессии
+  bmiInfo.bmiHeader.biSizeImage:=0;        // размер не знаем, ставим в ноль
+  bmiInfo.bmiHeader.biXPelsPerMeter:=2834; // пикселей на метр, гор.
+  bmiInfo.bmiHeader.biYPelsPerMeter:=2834; // пикселей на метр, верт.
+  bmiInfo.bmiHeader.biClrUsed:=0;          // палитры нет, все в ноль
+  bmiInfo.bmiHeader.biClrImportant:=0;     // то же
+  bmiInfo.bmiHeader.biSize:=SizeOf(bmiInfo.bmiHeader); // размер структруы
+  bmDIB:=CreateDIBSection(DC, bmiInfo, DIB_RGB_COLORS,
+  Pointer(lpBits), 0, 0);
+  //создаем независимый растр WxHx24, без палитры, в указателе lpBits получаем
+  //адрес первого байта этого растра. bmDIB - дискрептор растра
+
+  //заполняем первые шесть членов BITMAPINFO для передачи в GetDIBits
+
+  bmiInfo.bmiHeader.biWidth:=W;            // ширина
+  bmiInfo.bmiHeader.biHeight:=H;           // высота
+  bmiInfo.bmiHeader.biPlanes:=1;           // всегда 1
+  bmiInfo.bmiHeader.biBitCount:=24;        // три байта на пиксель
+  bmiInfo.bmiHeader.biCompression:=BI_RGB; // без компресси
+  bmiInfo.bmiHeader.biSize:=SizeOf(bmiInfo.bmiHeader); // размер структуры
+  GetDIBits(DC, Bitmap, 0, H-1, lpBits, bmiInfo, DIB_RGB_COLORS);
+  //конвертируем исходный растр в наш с его копированием по адресу lpBits
+
+  lpOldBits:=lpBits; //запоминаем адрес lpBits
+
+  //первый проход - подсчитываем число прямоугольников, необходимых для
+  //создания региона
+  C:=0; //сначала ноль
+  //проход снизу вверх
+  for Y:=H-1 downto 1 do
+  begin
+    X:=0;
+    //от 0 до ширины-1
+    while X <= W - 1 do
+    begin
+      //пропускаем прзрачный цвет, увеличивая координату и указатель
+      while (RGB(lpBits.rgbtRed, lpBits.rgbtGreen,
+      lpBits.rgbtBlue)=TransClr) and (X <=  W - 1)do
+      begin
+        Inc(lpBits);
+        X:=X+1;
+      end;
+      //если нашли не прозрачный цвет, то считаем, сколько точек в ряду он идет
+      if RGB(lpBits.rgbtRed, lpBits.rgbtGreen,
+      lpBits.rgbtBlue)<>TransClr then
+      begin
+        while (RGB(lpBits.rgbtRed, lpBits.rgbtGreen,
+        lpBits.rgbtBlue)<>TransClr) and (X <= W - 1) do
+        begin
+          Inc(lpBits);
+          X:=X+1;
+        end;
+        //увиличиваем счетчик прямоугольников
+        C:=C+1;
+      end;
+    end;
+    //ряд закончился, необходимо увеличить указатель до кратности 4
+    PChar(lpBits):=PChar(lpBits)+I;
+  end;
+
+  lpBits:=lpOldBits; //восстанавливаем значение lpBits
+
+  //Заполняем структуру RGNDATAHEADER
+  rdhInfo.iType:=RDH_RECTANGLES;     // будем использовать прямоугольники
+  rdhInfo.nCount:=C;                 // их количество
+  rdhInfo.nRgnSize:=0;               // размер выделяем памяти не знаем
+  rdhInfo.rcBound:=Rect(0, 0, W, H); // размер региона
+  rdhInfo.dwSize:=SizeOf(rdhInfo);   // размер структуры
+
+  //выделяем память для струтуры RGNDATA:
+  //сумма RGNDATAHEADER и необходимых на прямоугольников
+  BufSize:=SizeOf(rdhInfo)+SizeOf(TRect)*C;
+  GetMem(Buf, BufSize);
+  //ставим указатель на выделенную память
+  lpData:=Buf;
+  //заносим в память RGNDATAHEADER
+  lpData.rdh:=rdhInfo;
+
+  //Заполдяенм память прямоугольниками
+  lpRect:=@lpData.Buffer; //первый прямоугольник
+  for Y:=H-1 downto 1 do
+  begin
+    X:=0;
+    while X <= W - 1 do
+    begin
+      while (RGB(lpBits.rgbtRed, lpBits.rgbtGreen,
+      lpBits.rgbtBlue)=TransClr) and (X <= W - 1) do
+      begin
+        Inc(lpBits);
+        X:=X+1;
+      end;
+      if RGB(lpBits.rgbtRed, lpBits.rgbtGreen,
+      lpBits.rgbtBlue)<>TransClr then
+      begin
+        F:=X;
+        while (RGB(lpBits.rgbtRed, lpBits.rgbtGreen,
+        lpBits.rgbtBlue)<>TransClr) and (X <= W - 1) do
+        begin
+          Inc(lpBits);
+          X:=X+1;
+        end;
+        lpRect^:=Rect(F, Y, X, Y+1); //заносим координаты
+        Inc(lpRect); //переходим к следующему
+      end;
+    end;
+    PChar(lpBits):=PChar(lpBits)+I;
+  end;
+
+  //после окночания заполнения структуры RGNDATA можно создавать регион.
+  //трансформации нам не нужны, ставим в nil, указываем размер
+  //созданной структуры и ее саму.
+
+  //создаем регион
+  Result:=ExtCreateRegion(nil, BufSize, lpData^);
+
+  //теперь структура RGNDATA больше не нужна, удаляем
+  FreeMem(Buf, BufSize);
+  //созданный растр тоже удаляем
+  DeleteObject(bmDIB);
+end;
+
+{$endregion}
+
+
+end.

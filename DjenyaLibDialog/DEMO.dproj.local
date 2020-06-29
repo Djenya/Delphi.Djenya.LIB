@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2010.12.09 10:26:29.452.pas,C:\Documents and Settings\Djenya.AMK\Мои документы\RAD Studio\Projects\Unit2.pas=C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMF.pas</Transaction>
+    <Transaction>2010.12.09 10:26:29.468.dfm,C:\Documents and Settings\Djenya.AMK\Мои документы\RAD Studio\Projects\Unit2.dfm=C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMF.dfm</Transaction>
+    <Transaction>2010.12.09 10:27:17.054.pas,C:\Documents and Settings\Djenya.AMK\Мои документы\RAD Studio\Projects\Unit1.pas=C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMain.pas</Transaction>
+    <Transaction>2010.12.09 10:27:17.054.dfm,C:\Documents and Settings\Djenya.AMK\Мои документы\RAD Studio\Projects\Unit1.dfm=C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMain.dfm</Transaction>
+    <Transaction>2010.12.09 10:27:27.356.dproj,C:\Documents and Settings\Djenya.AMK\Мои документы\RAD Studio\Projects\Project1.dproj=C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\Mes.dproj</Transaction>
+    <Transaction>2010.12.09 10:30:23.880.pas,C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMain.pas=</Transaction>
+    <Transaction>2010.12.09 10:30:23.880.dfm,C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMain.dfm=</Transaction>
+    <Transaction>2010.12.09 10:47:23.938.pas,C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMF.pas=C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\DjenyaLibDialog.pas</Transaction>
+    <Transaction>2010.12.09 10:47:23.969.dfm,C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\UnitMF.dfm=C:\Documents and Settings\Djenya.AMK\Рабочий стол\LibM\DjenyaLibDialog.dfm</Transaction>
+    <Transaction>2011.07.28 13:10:33.874.pas,D:\BIN\My\DjenyaLibDialog\Unit1.pas=D:\BIN\My\DjenyaLibDialog\frmUnitDialog.pas</Transaction>
+    <Transaction>2011.07.28 13:10:33.874.dfm,D:\BIN\My\DjenyaLibDialog\Unit1.dfm=D:\BIN\My\DjenyaLibDialog\frmUnitDialog.dfm</Transaction>
+    <Transaction>2011.08.01 11:49:49.978.dproj,D:\BIN\My\DjenyaLibDialog\Mes.dproj=D:\BIN\My\DjenyaLibDialog\DEMO.dproj</Transaction>
+    <Transaction>2011.08.01 11:51:09.446.pas,D:\BIN\My\DjenyaLibDialog\DjenyaLibDialog.pas=</Transaction>
+    <Transaction>2011.08.01 11:51:09.446.dfm,D:\BIN\My\DjenyaLibDialog\DjenyaLibDialog.dfm=</Transaction>
+  </Transactions>
+</BorlandProject>
